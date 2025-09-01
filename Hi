@@ -1,0 +1,42 @@
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/SixZensED/Backups/refs/heads/main/Xelora%20Lib%202.lua"))()
+
+local main = library:CreateWindow({Title = "Xelora Hub",Icon = 127435222710292})
+
+local tab = main:CreateTab({Title = "Tabs ???"})
+
+local tab2 = main:CreateTab({Title = "Tabs ???"})
+
+
+side:CreateSlider({Title = "Slider ???",min = 0,max = 10000,value = 1000,callback = function(value)
+    print(value)
+end,})
+
+side:CreateButton({Title = "Show Touch",callback = function()
+    print(local p=game.Players.LocalPlayer
+local u,ts,rs=game:GetService("UserInputService"),game:GetService("TweenService"),game:GetService("RunService")
+local g=Instance.new("ScreenGui",p:WaitForChild("PlayerGui")) g.IgnoreGuiInset=true g.ResetOnSpawn=false g.ZIndexBehavior=Enum.ZIndexBehavior.Global
+local a={}
+local c=function(o) return Color3.fromHSV((tick()*.6+o)%1,1,1) end
+local d=function(i)
+ local f=Instance.new("Frame",g) f.Size=UDim2.fromOffset(60,60) f.AnchorPoint=Vector2.new(.5,.5) f.Position=UDim2.fromOffset(i.Position.X,i.Position.Y+50) f.BackgroundTransparency=.3 f.ZIndex=10 Instance.new("UICorner",f).CornerRadius=UDim.new(1,0)
+ local gr=Instance.new("UIGradient",f) gr.Rotation=45
+ ts:Create(f,TweenInfo.new(.2),{Size=UDim2.fromOffset(72,72),BackgroundTransparency=0}):Play()
+ a[i]={f=f,g=gr}
+end
+local x=function(f) ts:Create(f,TweenInfo.new(.4),{BackgroundTransparency=1,Size=UDim2.fromOffset(90,90)}):Play() task.delay(.4,function()f:Destroy()end) end
+u.InputBegan:Connect(function(i)if i.UserInputType==Enum.UserInputType.Touch then d(i)end end)
+u.TouchMoved:Connect(function(i)if a[i]then a[i].f.Position=UDim2.fromOffset(i.Position.X,i.Position.Y+50)end end)
+u.InputEnded:Connect(function(i)if a[i]then x(a[i].f)a[i]=nil end end)
+rs.RenderStepped:Connect(function()for _,v in pairs(a)do v.g.Color=ColorSequence.new{ColorSequenceKeypoint.new(0,c(0)),ColorSequenceKeypoint.new(.5,c(.5)),ColorSequenceKeypoint.new(1,c(1))}end end)))
+end,})
+
+
+side:CreateLabel({Title = "Label ???",side = "right"}) -- right , left , empty = center
+
+side:CreateKeyBind({Title = "Keybind ???",key = Enum.KeyCode.Q,value = false,callback = function(value)
+    print(value)
+end,})
+
+side:CreateTextBox({Title = "Textbox ???",value = "lol xelora hub",placeholder = "lol",callback = function(value)
+    print(value)
+end,})
