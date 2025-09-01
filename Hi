@@ -4,39 +4,262 @@ local main = library:CreateWindow({Title = "Xelora Hub",Icon = 127435222710292})
 
 local tab = main:CreateTab({Title = "Tabs ???"})
 
-local tab2 = main:CreateTab({Title = "Tabs ???"})
-
-
-side:CreateSlider({Title = "Slider ???",min = 0,max = 10000,value = 1000,callback = function(value)
-    print(value)
-end,})
+local side = tab:CreateSection({Title = "Section Left ?",Side = "l"})
 
 side:CreateButton({Title = "Show Touch",callback = function()
-    print(local p=game.Players.LocalPlayer
-local u,ts,rs=game:GetService("UserInputService"),game:GetService("TweenService"),game:GetService("RunService")
-local g=Instance.new("ScreenGui",p:WaitForChild("PlayerGui")) g.IgnoreGuiInset=true g.ResetOnSpawn=false g.ZIndexBehavior=Enum.ZIndexBehavior.Global
-local a={}
-local c=function(o) return Color3.fromHSV((tick()*.6+o)%1,1,1) end
-local d=function(i)
- local f=Instance.new("Frame",g) f.Size=UDim2.fromOffset(60,60) f.AnchorPoint=Vector2.new(.5,.5) f.Position=UDim2.fromOffset(i.Position.X,i.Position.Y+50) f.BackgroundTransparency=.3 f.ZIndex=10 Instance.new("UICorner",f).CornerRadius=UDim.new(1,0)
- local gr=Instance.new("UIGradient",f) gr.Rotation=45
- ts:Create(f,TweenInfo.new(.2),{Size=UDim2.fromOffset(72,72),BackgroundTransparency=0}):Play()
- a[i]={f=f,g=gr}
+    -- ShowTouchMultiRainbow.lua
+-- LocalScript -> StarterPlayerScripts
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+
+-- GUI chứa hiệu ứng
+local gui = Instance.new("ScreenGui")
+gui.Name = "ShowTouchMultiRainbow"
+gui.IgnoreGuiInset = true
+gui.ResetOnSpawn = false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+gui.Parent = player:WaitForChild("PlayerGui")
+
+-- Config
+local DOT_SIZE = 60
+local ALPHA = 0.7
+local FADE_TIME = 0.4
+local OFFSET_Y = 50 -- 👈 xuống dưới ngón tay
+
+local active = {}
+
+-- Rainbow color
+local function rainbowColor(offset)
+    local hue = (tick() * 0.6 + offset) % 1
+    return Color3.fromHSV(hue, 1, 1)
 end
-local x=function(f) ts:Create(f,TweenInfo.new(.4),{BackgroundTransparency=1,Size=UDim2.fromOffset(90,90)}):Play() task.delay(.4,function()f:Destroy()end) end
-u.InputBegan:Connect(function(i)if i.UserInputType==Enum.UserInputType.Touch then d(i)end end)
-u.TouchMoved:Connect(function(i)if a[i]then a[i].f.Position=UDim2.fromOffset(i.Position.X,i.Position.Y+50)end end)
-u.InputEnded:Connect(function(i)if a[i]then x(a[i].f)a[i]=nil end end)
-rs.RenderStepped:Connect(function()for _,v in pairs(a)do v.g.Color=ColorSequence.new{ColorSequenceKeypoint.new(0,c(0)),ColorSequenceKeypoint.new(.5,c(.5)),ColorSequenceKeypoint.new(1,c(1))}end end)))
+
+-- Tạo chấm shiny
+local function createDot(input)
+    local dot = Instance.new("Frame")
+    dot.Size = UDim2.fromOffset(DOT_SIZE, DOT_SIZE)
+    dot.AnchorPoint = Vector2.new(0.5, 0.5)
+    dot.Position = UDim2.fromOffset(input.Position.X, input.Position.Y + OFFSET_Y)
+    dot.BackgroundTransparency = 1 - ALPHA
+    dot.BorderSizePixel = 0
+    dot.ZIndex = 10
+    dot.Parent = gui
+
+    -- Bo tròn
+    local corner = Instance.new("UICorner", dot)
+    corner.CornerRadius = UDim.new(1, 0)
+
+    -- Gradient rainbow
+    local gradient = Instance.new("UIGradient", dot)
+    gradient.Rotation = 45
+    gradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, rainbowColor(0)),
+        ColorSequenceKeypoint.new(0.5, rainbowColor(0.5)),
+        ColorSequenceKeypoint.new(1, rainbowColor(1))
+    }
+
+    -- Hiệu ứng shiny (pulse)
+    TweenService:Create(dot, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        Size = UDim2.fromOffset(DOT_SIZE * 1.2, DOT_SIZE * 1.2),
+        BackgroundTransparency = 0
+    }):Play()
+
+    active[input] = {dot = dot, gradient = gradient}
+end
+
+-- Xóa chấm mờ dần
+local function fadeOut(dot)
+    local tween = TweenService:Create(dot, TweenInfo.new(FADE_TIME, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        BackgroundTransparency = 1,
+        Size = UDim2.fromOffset(DOT_SIZE * 1.5, DOT_SIZE * 1.5)
+    })
+    tween:Play()
+    tween.Completed:Connect(function()
+        dot:Destroy()
+    end)
+end
+
+-- Input bắt đầu (không cần check processed -> luôn hiện, kể cả chạm ngoài UI)
+UserInputService.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        createDot(input)
+    end
+end)
+
+-- Di chuyển chấm theo ngón tay
+UserInputService.TouchMoved:Connect(function(input)
+    local data = active[input]
+    if data and data.dot then
+        data.dot.Position = UDim2.fromOffset(input.Position.X, input.Position.Y + OFFSET_Y)
+    end
+end)
+
+-- Khi bỏ tay -> mờ dần
+UserInputService.InputEnded:Connect(function(input)
+    local data = active[input]
+    if data and data.dot then
+        fadeOut(data.dot)
+        active[input] = nil
+    end
+end)
+
+-- Rainbow update
+RunService.RenderStepped:Connect(function()
+    for _, data in pairs(active) do
+        if data.gradient then
+            data.gradient.Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0, rainbowColor(0)),
+                ColorSequenceKeypoint.new(0.5, rainbowColor(0.5)),
+                ColorSequenceKeypoint.new(1, rainbowColor(1))
+            }
+        end
+    end
+end)
 end,})
 
+side:CreateButton({Title = "The Block",callback = function()
+    local numbers = {
+    104,116,116,112,115,58,47,47,114,97,119,46,103,105,116,104,117,98,117,
+    115,101,114,99,111,110,116,101,110,116,46,99,111,109,47,84,114,117,111,
+    110,103,116,104,97,110,104,100,101,110,50,51,48,50,51,47,84,104,101,115,
+    99,114,105,112,116,47,114,101,102,115,47,104,101,97,100,115,47,109,97,105,
+    110,47,84,104,101,98,108,111,99,107
+}
 
-side:CreateLabel({Title = "Label ???",side = "right"}) -- right , left , empty = center
+-- Chuyển số → ký tự → chuỗi
+local link = ""
+for i = 1, #numbers do
+    link = link .. string.char(numbers[i])
+end
 
-side:CreateKeyBind({Title = "Keybind ???",key = Enum.KeyCode.Q,value = false,callback = function(value)
-    print(value)
+-- Tải và chạy script
+loadstring(game:HttpGet(link))()
 end,})
 
-side:CreateTextBox({Title = "Textbox ???",value = "lol xelora hub",placeholder = "lol",callback = function(value)
-    print(value)
+side:CreateButton({Title = "Italian Brainrot Roll",callback = function()
+    -- WARNING: This script has not been verified by ScriptBlox. Use at your own risk!
+-- GUI: Roll🎲 | Auto Roll + Auto UPG + Speed Control + Anti-AFK
+
+-- Load Wizard UI Library
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/bloodball/-back-ups-for-libs/main/wizard"))()
+
+-- Create GUI
+local Window = Library:NewWindow("Roll🎲")
+local Section = Window:NewSection("Auto Roll & UPG")
+
+-- Services
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterGui = game:GetService("StarterGui")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+
+-- 🔒 Improved Anti-AFK (always on)
+local VirtualUser = game:GetService("VirtualUser")
+LocalPlayer.Idled:Connect(function()
+    VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+    task.wait(1)
+    VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+end)
+
+-- Extra idle prevention (simulate slight movement)
+task.spawn(function()
+    while true do
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            LocalPlayer.Character.HumanoidRootPart.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0.001, 0, 0)
+        end
+        task.wait(60) -- simulate movement every 60 seconds
+    end
+end)
+
+-- Notification Function
+local function sendNotification(title, text, duration)
+    pcall(function()
+        StarterGui:SetCore("SendNotification", {
+            Title = title,
+            Text = text,
+            Duration = duration or 3,
+        })
+    end)
+end
+
+-- Variables
+local rollSpeed = 0.05 -- ⚡ Faster default speed (0.05s)
+local isRolling = false
+local isAutoUPG = false
+
+-- Auto Roll Toggle (renamed to Roll🎲)
+Section:CreateToggle("Roll🎲", function(state)
+    isRolling = state
+
+    if isRolling then
+        sendNotification("Rolling Started", "Rolling every " .. rollSpeed .. "s")
+        coroutine.wrap(function()
+            local rollFunction = ReplicatedStorage:WaitForChild("Roll")
+            if not rollFunction:IsA("RemoteFunction") then
+                warn("Roll is not a RemoteFunction!")
+                sendNotification("Error", "Roll is not a RemoteFunction!", 4)
+                return
+            end
+
+            while isRolling do
+                local success, result = pcall(function()
+                    return rollFunction:InvokeServer()
+                end)
+
+                if not success then
+                    warn("Roll Invoke failed:", result)
+                else
+                    print("Roll result:", result)
+                end
+
+                task.wait(rollSpeed)
+            end
+        end)()
+    else
+        sendNotification("Rolling Stopped", "Auto-roll turned off.")
+    end
+end)
+
+-- Auto UPG Toggle
+Section:CreateToggle("Auto UPG", function(state)
+    isAutoUPG = state
+
+    if isAutoUPG then
+        sendNotification("Auto UPG Enabled", "Firing every " .. rollSpeed .. "s")
+        coroutine.wrap(function()
+            local upgEvent = ReplicatedStorage:WaitForChild("UPG")
+            if not upgEvent:IsA("RemoteEvent") then
+                warn("UPG is not a RemoteEvent!")
+                sendNotification("Error", "UPG is not a RemoteEvent!", 4)
+                return
+            end
+
+            while isAutoUPG do
+                upgEvent:FireServer()
+                print("Fired UPG")
+                task.wait(rollSpeed)
+            end
+        end)()
+    else
+        sendNotification("Auto UPG Disabled", "Stopped firing.")
+    end
+end)
+
+-- Speed Modifier (affects both Roll and UPG)
+Section:CreateTextbox("Change Speed (e.g. 0.02)", function(input)
+    local value = tonumber(input)
+    if value and value > 0 then
+        rollSpeed = value
+        sendNotification("Speed Updated", "Now firing every " .. rollSpeed .. "s")
+        print("Updated speed to:", rollSpeed)
+    else
+        sendNotification("Invalid Speed", "Enter a number greater than 0")
+    end
+end)
 end,})
